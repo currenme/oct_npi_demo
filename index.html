@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NPI Interactive Lab</title>
+<style>
+  :root {
+    --ink: #171a20;
+    --muted: #68717d;
+    --line: #dde2e8;
+    --soft: #f5f6f7;
+    --paper: #fbfbfa;
+    --card: #ffffff;
+    --mit: #a31f34;
+    --mit-dark: #7b1426;
+    --green: #16794f;
+    --amber: #ad6b08;
+    --red-soft: #fff2f4;
+    --shadow: 0 10px 28px rgba(23, 26, 32, 0.07);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--paper);
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    height: 68px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 34px;
+    background: rgba(251,251,250,.94);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand-mark { width: 7px; height: 34px; border-radius: 5px; background: var(--mit); }
+  .brand-title { font-weight: 800; letter-spacing: -0.02em; font-size: 20px; }
+  .brand-sub { font-size: 12px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+  .tabs { display:flex; gap: 5px; padding: 5px; border-radius: 11px; background: #eef0f2; }
+  .tab-btn {
+    border: 0; background: transparent; color: #555f6b;
+    border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 700;
+    cursor: pointer;
+  }
+  .tab-btn.active { background: #fff; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  main { max-width: 1480px; margin: 0 auto; padding: 30px 34px 70px; }
+  .hero { display:flex; justify-content:space-between; gap:30px; align-items:flex-end; margin-bottom: 24px; }
+  h1 { margin:0; font-size: clamp(34px,4vw,58px); letter-spacing:-.045em; line-height:1.02; }
+  .lede { margin:10px 0 0; color:var(--muted); font-size:17px; max-width:860px; line-height:1.55; }
+  .pill { display:inline-flex; align-items:center; gap:7px; font-weight:800; font-size:12px; color:var(--mit); background:var(--red-soft); padding:8px 11px; border-radius:999px; white-space:nowrap; }
+  .section { display:none; }
+  .section.active { display:block; }
+  .grid-main { display:grid; grid-template-columns: 1.6fr .92fr; gap:20px; align-items:start; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); }
+  .card-h { padding:18px 20px 15px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .card-h h2, .card-h h3 { margin:0; font-size:17px; letter-spacing:-.02em; }
+  .card-h .small { color:var(--muted); font-size:12px; }
+  .card-b { padding:18px 20px 20px; }
+  .stat-hero { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px; }
+  .stat { background:var(--soft); border:1px solid #eceff2; border-radius:14px; padding:15px; }
+  .stat .label { color:var(--muted); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+  .stat .value { margin-top:4px; font-size:34px; line-height:1; font-weight:850; letter-spacing:-.04em; }
+  .stat .detail { margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35; }
+  .stat.primary { background:#fff8f9; border-color:#f2d9de; }
+  .stat.primary .value { color:var(--mit); font-size:48px; }
+  .controls { display:grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+  label.field { display:block; font-size:11px; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
+  .field input[type=number], .field select, .search input, .op-name {
+    margin-top:6px; width:100%; border:1px solid #cfd5dc; background:#fff; border-radius:9px; padding:9px 10px; color:var(--ink); font:inherit; font-size:13px; outline:none;
+  }
+  input:focus, select:focus { border-color:#9aa4ae; box-shadow:0 0 0 3px rgba(163,31,52,.08); }
+  .opp-table { border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .opp-head, .opp-row { display:grid; grid-template-columns: 1.35fr 1.55fr .9fr .82fr .78fr 40px; align-items:center; min-width:830px; }
+  .opp-scroll { overflow-x:auto; }
+  .opp-head { padding:9px 11px; background:#f1f3f5; color:var(--muted); font-size:10px; font-weight:850; text-transform:uppercase; letter-spacing:.07em; }
+  .opp-row { padding:8px 11px; border-top:1px solid #edf0f2; background:#fff; }
+  .opp-row.excluded { background:#fafafa; opacity:.56; }
+  .opp-row.retained { box-shadow: inset 3px 0 0 var(--green); }
+  .npi-control { display:flex; align-items:center; gap:8px; }
+  .npi-control input[type=range] { width:100%; accent-color:var(--mit); }
+  .npi-num { width:62px!important; margin:0!important; padding:7px!important; }
+  .seg { display:flex; background:#eef1f3; padding:3px; border-radius:9px; width:max-content; }
+  .seg button { border:0; border-radius:7px; padding:6px 9px; background:transparent; font-weight:800; font-size:11px; cursor:pointer; color:#68717d; }
+  .seg button.win.active { background:#e7f5ed; color:#12633f; }
+  .seg button.loss.active { background:#f8e7ea; color:#8e1a2e; }
+  .game-value { font-variant-numeric:tabular-nums; font-weight:750; font-size:12px; }
+  .badge { display:inline-flex; padding:5px 7px; border-radius:999px; font-size:10px; font-weight:850; }
+  .badge.in { background:#e7f5ed; color:#12633f; }
+  .badge.out { background:#eceff2; color:#6d7580; }
+  .remove { border:0; background:transparent; color:#a0a7af; cursor:pointer; font-size:18px; }
+  .row-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .btn { border:1px solid #cfd5dc; background:#fff; border-radius:10px; padding:9px 12px; font-size:12px; font-weight:800; cursor:pointer; color:#404852; }
+  .btn:hover { background:#f6f7f8; }
+  .btn.primary { border-color:var(--mit); background:var(--mit); color:#fff; }
+  .btn.ghost-red { color:var(--mit); border-color:#e5c6cc; }
+  .formula { display:grid; gap:10px; }
+  .formula-box { border:1px solid var(--line); background:#fbfbfc; border-radius:12px; padding:12px 14px; }
+  .formula-box strong { display:block; font-size:12px; margin-bottom:5px; }
+  .formula-code { color:#4b5560; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; line-height:1.5; }
+  .bar-wrap { margin-top:14px; }
+  .bar-label { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; margin-bottom:6px; }
+  .bar { height:10px; background:#eceff2; border-radius:999px; overflow:hidden; }
+  .bar > span { display:block; height:100%; background:var(--mit); border-radius:999px; transition:width .25s ease; }
+  .explain { margin-top:14px; padding:13px; background:#f6f7f8; border-radius:12px; color:#4f5863; font-size:12px; line-height:1.55; }
+
+  /* Stability */
+  .stability-grid { display:grid; grid-template-columns: 1.3fr .7fr; gap:20px; }
+  .chart-box { padding:18px 20px 20px; }
+  canvas { width:100%; height:330px; display:block; }
+  .date-slider { padding:16px 20px 20px; border-top:1px solid var(--line); }
+  .date-slider input { width:100%; accent-color:var(--mit); }
+  .slider-labels { display:flex; justify-content:space-between; color:#7b8490; font-size:10px; margin-top:7px; }
+  .metric-stack { display:grid; gap:12px; }
+  .metric-card { padding:18px; }
+  .metric-card .big { font-size:52px; font-weight:900; letter-spacing:-.05em; color:var(--mit); line-height:1; }
+  .metric-card .title { font-weight:850; margin-top:8px; }
+  .metric-card p { color:var(--muted); font-size:12px; line-height:1.5; margin:6px 0 0; }
+  .mini-compare { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .mini { padding:14px; background:#f6f7f8; border-radius:12px; }
+  .mini .n { font-size:24px; font-weight:850; color:var(--ink); }
+  .mini .t { margin-top:3px; color:var(--muted); font-size:11px; line-height:1.3; }
+  .takeaway { margin-top:12px; border-left:4px solid var(--mit); padding:12px 14px; background:#fff8f9; border-radius:0 10px 10px 0; font-size:13px; line-height:1.55; }
+
+  /* trajectories */
+  .upload-zone { border:1.5px dashed #cbd2da; border-radius:16px; padding:28px; text-align:center; background:#fafbfc; }
+  .upload-zone input { display:none; }
+  .upload-zone .u-title { font-size:18px; font-weight:850; }
+  .upload-zone .u-sub { color:var(--muted); font-size:12px; margin:7px 0 14px; }
+  .trajectory-ui { display:none; margin-top:18px; }
+  .trajectory-ui.ready { display:block; }
+  .team-picker { display:flex; gap:9px; align-items:end; margin-bottom:12px; flex-wrap:wrap; }
+  .team-picker .search { min-width:250px; flex:1; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px; }
+  .chip { display:inline-flex; gap:7px; align-items:center; padding:7px 9px; background:#f0f2f4; border-radius:999px; font-size:11px; font-weight:750; }
+  .chip button { border:0; background:transparent; cursor:pointer; color:#88919b; padding:0; }
+  .footer-note { margin-top:20px; color:#8a929c; font-size:11px; text-align:center; }
+  @media (max-width: 980px) {
+    .grid-main, .stability-grid { grid-template-columns:1fr; }
+    .controls { grid-template-columns:1fr 1fr; }
+    .tabs { overflow:auto; max-width:58vw; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div>
+      <div class="brand-title">NPI Interactive Lab</div>
+      <div class="brand-sub">MIT Sports Lab · DIII Women’s Volleyball</div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="builder">Build an NPI</button>
+    <button class="tab-btn" data-tab="stability">Ranking stability</button>
+    <button class="tab-btn" data-tab="trajectories">Team trajectories</button>
+  </nav>
+</header>
+
+<main>
+  <section id="builder" class="section active">
+    <div class="hero">
+      <div>
+        <h1>Build your own NPI</h1>
+        <p class="lede">Change opponents, results, and NCAA “dials” and watch the résumé recalculate instantly. Green rows are retained in the NPI; faded rows are excluded.</p>
+      </div>
+      <span class="pill">2025 NCAA defaults loaded</span>
+    </div>
+
+    <div class="grid-main">
+      <div class="card">
+        <div class="card-h">
+          <div><h2>Your résumé</h2><div class="small">Start with 10 opponents, then add more to see retained-win behavior</div></div>
+          <button class="btn ghost-red" id="resetSchedule">Reset example</button>
+        </div>
+        <div class="card-b">
+          <div class="controls">
+            <label class="field">Win component (%)<input id="winWeight" type="number" min="0" max="100" step="1" value="20"></label>
+            <label class="field">QWB threshold<input id="qwbThreshold" type="number" min="0" max="100" step="0.5" value="55.5"></label>
+            <label class="field">QWB multiplier<input id="qwbMultiplier" type="number" min="0" max="2" step="0.05" value="0.6"></label>
+            <label class="field">Minimum retained wins<input id="minWins" type="number" min="0" max="30" step="1" value="10"></label>
+          </div>
+          <div class="opp-scroll">
+            <div class="opp-table">
+              <div class="opp-head"><div>Opponent</div><div>Opponent NPI</div><div>Result</div><div>Game value</div><div>Counts?</div><div></div></div>
+              <div id="oppRows"></div>
+            </div>
+          </div>
+          <div class="row-actions">
+            <button class="btn primary" id="addOpponent">+ Add opponent</button>
+            <button class="btn" id="presetStrong">Strong schedule</button>
+            <button class="btn" id="presetWeak">Weak schedule</button>
+            <button class="btn" id="presetUpset">Upset résumé</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card">
+        <div class="card-h"><h3>Calculated result</h3><span class="small">recursive fixed point</span></div>
+        <div class="card-b">
+          <div class="stat-hero">
+            <div class="stat primary"><div class="label">Team NPI</div><div class="value" id="teamNpi">—</div><div class="detail" id="iterationDetail">—</div></div>
+            <div class="stat"><div class="label">Record</div><div class="value" id="teamRecord">—</div><div class="detail" id="retainedDetail">—</div></div>
+          </div>
+          <div class="formula">
+            <div class="formula-box"><strong>Win value</strong><div class="formula-code" id="winFormula">0.80 × Opp. NPI + 20 + QWB</div></div>
+            <div class="formula-box"><strong>Loss value</strong><div class="formula-code" id="lossFormula">0.80 × Opp. NPI</div></div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>Retained games</span><strong id="retainedPct">—</strong></div>
+            <div class="bar"><span id="retainedBar" style="width:0%"></span></div>
+          </div>
+          <div class="explain" id="explainBox"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="stability" class="section">
+    <div class="hero">
+      <div>
+        <h1>When does NPI stabilize?</h1>
+        <p class="lede">Move through the season and compare that day’s national ordering with the Selection Day ranking. The overall hierarchy settles early, while close teams remain much harder to order.</p>
+      </div>
+      <span class="pill">2025 reconstructed season</span>
+    </div>
+    <div class="stability-grid">
+      <div class="card">
+        <div class="card-h"><div><h2>Spearman rank correlation to Selection Day</h2><div class="small">ρ = 1 means identical rank ordering</div></div><strong id="selectedDateText">Sep 6</strong></div>
+        <div class="chart-box"><canvas id="rhoChart" width="900" height="360"></canvas></div>
+        <div class="date-slider">
+          <input id="dateSlider" type="range" min="0" max="4" step="1" value="0">
+          <div class="slider-labels"><span>Sep 6</span><span>Sep 13</span><span>Oct 1</span><span>Oct 15</span><span>Nov 1</span></div>
+        </div>
+      </div>
+      <div class="metric-stack">
+        <div class="card metric-card">
+          <div class="big" id="rhoBig">.819</div>
+          <div class="title">Rank correlation</div>
+          <p id="rhoInterpretation">Even very early in the season, the broad hierarchy is already visible.</p>
+        </div>
+        <div class="card metric-card">
+          <div class="title">Top-25 convergence</div>
+          <div class="mini-compare" style="margin-top:10px">
+            <div class="mini"><div class="n">16 / 25</div><div class="t">Sep. 13 teams also in Selection Day top 25</div></div>
+            <div class="mini"><div class="n">21 / 25</div><div class="t">Nov. 1 teams also in Selection Day top 25</div></div>
+          </div>
+        </div>
+        <div class="card metric-card">
+          <div class="title">But close teams remain unstable</div>
+          <div class="mini-compare" style="margin-top:10px">
+            <div class="mini"><div class="n">52%</div><div class="t">Sep. 13 ordering preserved for teams only 1–5 ranks apart</div></div>
+            <div class="mini"><div class="n">61%</div><div class="t">Nov. 1 ordering preserved for teams only 1–5 ranks apart</div></div>
+          </div>
+          <div class="takeaway"><strong>Takeaway:</strong> high national correlation can coexist with substantial uncertainty among neighboring teams.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="trajectories" class="section">
+    <div class="hero">
+      <div>
+        <h1>Explore team trajectories</h1>
+        <p class="lede">Load the frozen master NPI Excel or CSV file and compare up to five teams across the full 2025 season. Everything runs locally in your browser; the file never leaves your computer.</p>
+      </div>
+      <span class="pill">Optional live-data demo</span>
+    </div>
+    <div class="card">
+      <div class="card-b">
+        <label class="upload-zone" for="dataFile">
+          <input id="dataFile" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+          <div class="u-title">Load the frozen 2025 daily NPI file</div>
+          <div class="u-sub">Choose an .xlsx or .csv file containing date, team_name, and npi columns.</div>
+          <span class="btn primary">Choose Excel / CSV</span>
+        </label>
+        <div id="trajectoryUI" class="trajectory-ui">
+          <div class="team-picker">
+            <label class="search field">Search team<input id="teamSearch" list="teamList" placeholder="MIT, Tufts, Wis.-Oshkosh…"></label>
+            <datalist id="teamList"></datalist>
+            <button id="addTeam" class="btn primary">Add team</button>
+            <button id="clearTeams" class="btn">Clear</button>
+          </div>
+          <div id="teamChips" class="chips"></div>
+          <div style="border:1px solid var(--line); border-radius:14px; padding:12px;"><canvas id="trajectoryChart" width="1100" height="430"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-note">Self-contained local demo · no server or internet connection required</div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+// ---------- tabs ----------
+$$('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+  $$('.tab-btn').forEach(b => b.classList.remove('active'));
+  $$('.section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  $('#' + btn.dataset.tab).classList.add('active');
+  if (btn.dataset.tab === 'stability') drawRhoChart();
+  if (btn.dataset.tab === 'trajectories' && trajectoryData) drawTrajectoryChart();
+}));
+
+// ---------- builder ----------
+const baseOpponents = [
+  ['East Tex. Baptist',70.686,'L'], ['Wis.-Oshkosh',69.804,'L'], ['Ill. Wesleyan',67.434,'W'],
+  ['Colby',66.544,'L'], ['Wis.-Eau Claire',66.386,'W'], ['MIT',65.530,'W'],
+  ['Johns Hopkins',65.416,'L'], ['Tufts',65.134,'W'], ['Wesleyan (CT)',64.023,'W'], ['Juniata',63.546,'L']
+];
+let opponents = [];
+let nextId = 1;
+
+function resetSchedule(arr=baseOpponents) {
+  opponents = arr.map(x => ({id:nextId++, name:x[0], npi:x[1], result:x[2]}));
+  renderOpponents();
+}
+function gameValue(o) {
+  const winPct = (+$('#winWeight').value || 0)/100;
+  const sos = 1-winPct;
+  const qThr = +$('#qwbThreshold').value || 0;
+  const qMult = +$('#qwbMultiplier').value || 0;
+  if (o.result === 'W') {
+    const qwb = o.npi >= qThr ? (o.npi-qThr)*qMult : 0;
+    return sos*o.npi + winPct*100 + qwb;
+  }
+  return sos*o.npi;
+}
+function computeNpi() {
+  const wins = opponents.filter(o=>o.result==='W');
+  if (!opponents.length) return {npi:0, retained:new Set(), iterations:0};
+  if (!wins.length) {
+    const sos = 1-(+$('#winWeight').value||0)/100;
+    const minOpp = Math.min(...opponents.map(o=>o.npi));
+    return {npi:sos*minOpp, retained:new Set(), iterations:1, zeroWins:true};
+  }
+  let npi = opponents.reduce((a,o)=>a+gameValue(o),0)/opponents.length;
+  let retained = new Set();
+  let iter=0;
+  const minWins = Math.max(0, Math.round(+$('#minWins').value||0));
+  for (; iter<1000; iter++) {
+    const winObjs = opponents.filter(o=>o.result==='W').map(o=>({o,v:gameValue(o)}));
+    const lossObjs = opponents.filter(o=>o.result==='L').map(o=>({o,v:gameValue(o)}));
+    let rw = winObjs.filter(x=>x.v >= npi);
+    let excluded = winObjs.filter(x=>x.v < npi).sort((a,b)=>b.v-a.v);
+    const target = Math.min(minWins, winObjs.length);
+    while (rw.length < target && excluded.length) rw.push(excluded.shift());
+    const rl = lossObjs.filter(x=>x.v <= npi);
+    const all = [...rw,...rl];
+    const next = all.length ? all.reduce((a,x)=>a+x.v,0)/all.length : npi;
+    retained = new Set(all.map(x=>x.o.id));
+    const damped = npi + .5*(next-npi);
+    if (Math.abs(damped-npi) < 1e-8) { npi=damped; break; }
+    npi=damped;
+  }
+  return {npi,retained,iterations:iter+1};
+}
+function renderOpponents() {
+  const result = computeNpi();
+  const rows = $('#oppRows'); rows.innerHTML='';
+  opponents.forEach(o=>{
+    const row=document.createElement('div');
+    row.className='opp-row '+(result.retained.has(o.id)?'retained':'excluded');
+    row.innerHTML=`
+      <input class="op-name" value="${escapeHtml(o.name)}" data-id="${o.id}" data-field="name">
+      <div class="npi-control"><input type="range" min="20" max="80" step="0.1" value="${o.npi}" data-id="${o.id}" data-field="npi"><input class="npi-num" type="number" min="0" max="100" step="0.1" value="${o.npi.toFixed(1)}" data-id="${o.id}" data-field="npiNum"></div>
+      <div class="seg"><button class="win ${o.result==='W'?'active':''}" data-id="${o.id}" data-result="W">W</button><button class="loss ${o.result==='L'?'active':''}" data-id="${o.id}" data-result="L">L</button></div>
+      <div class="game-value">${gameValue(o).toFixed(3)}</div>
+      <div><span class="badge ${result.retained.has(o.id)?'in':'out'}">${result.retained.has(o.id)?'RETAINED':'EXCLUDED'}</span></div>
+      <button class="remove" data-remove="${o.id}">×</button>`;
+    rows.appendChild(row);
+  });
+  bindRows(); updateSummary(result);
+}
+function bindRows(){
+  $$('[data-field="name"]').forEach(el=>el.oninput=e=>{ findOpp(+e.target.dataset.id).name=e.target.value; });
+  $$('[data-field="npi"]').forEach(el=>el.oninput=e=>{ const o=findOpp(+e.target.dataset.id);o.npi=+e.target.value;renderOpponents(); });
+  $$('[data-field="npiNum"]').forEach(el=>el.onchange=e=>{ const o=findOpp(+e.target.dataset.id);o.npi=Math.max(0,Math.min(100,+e.target.value));renderOpponents(); });
+  $$('[data-result]').forEach(el=>el.onclick=e=>{ findOpp(+e.target.dataset.id).result=e.target.dataset.result;renderOpponents(); });
+  $$('[data-remove]').forEach(el=>el.onclick=e=>{ opponents=opponents.filter(o=>o.id!==+e.currentTarget.dataset.remove);renderOpponents(); });
+}
+function findOpp(id){ return opponents.find(o=>o.id===id); }
+function updateSummary(r){
+  const w=opponents.filter(o=>o.result==='W').length, l=opponents.length-w;
+  $('#teamNpi').textContent=r.npi.toFixed(3);
+  $('#teamRecord').textContent=`${w}-${l}`;
+  const rc=r.retained.size;
+  $('#retainedDetail').textContent=r.zeroWins?'Zero-win special case':`${rc} of ${opponents.length} games retained`;
+  $('#iterationDetail').textContent=`Solved in ${r.iterations} iteration${r.iterations===1?'':'s'}`;
+  const pct=opponents.length?100*rc/opponents.length:0;
+  $('#retainedPct').textContent=`${Math.round(pct)}%`;
+  $('#retainedBar').style.width=pct+'%';
+  const winPct=(+$('#winWeight').value||0)/100, sos=1-winPct;
+  $('#winFormula').textContent=`${sos.toFixed(2)} × Opp. NPI + ${(winPct*100).toFixed(0)} + QWB`;
+  $('#lossFormula').textContent=`${sos.toFixed(2)} × Opp. NPI`;
+  const excluded=opponents.length-rc;
+  $('#explainBox').innerHTML = r.zeroWins
+    ? `<strong>Zero-win rule:</strong> with no wins, the demo uses the lowest opponent NPI × SOS weight.`
+    : `<strong>${excluded} game${excluded===1?' is':'s are'} currently excluded.</strong> Wins below the team’s NPI can be dropped only after satisfying the minimum-win requirement; losses above the team’s NPI do not count because they would raise the rating.`;
+}
+['winWeight','qwbThreshold','qwbMultiplier','minWins'].forEach(id=>$('#'+id).addEventListener('input',renderOpponents));
+$('#addOpponent').onclick=()=>{opponents.push({id:nextId++,name:'New opponent',npi:50,result:'W'});renderOpponents();};
+$('#resetSchedule').onclick=()=>{ $('#winWeight').value=20;$('#qwbThreshold').value=55.5;$('#qwbMultiplier').value=.6;$('#minWins').value=10;resetSchedule(); };
+$('#presetStrong').onclick=()=>resetSchedule(baseOpponents.map((x,i)=>[x[0], Math.min(78,x[1]+6), i%3===0?'W':x[2]]));
+$('#presetWeak').onclick=()=>resetSchedule(baseOpponents.map((x,i)=>[x[0], Math.max(30,x[1]-17), i<7?'W':'L']));
+$('#presetUpset').onclick=()=>resetSchedule(baseOpponents.map((x,i)=>[x[0], x[1], i<6?'W':'L']));
+function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+resetSchedule();
+
+// ---------- stability ----------
+const rhoData=[
+  {date:'Sep 6',rho:.819,note:'Even very early in the season, the broad hierarchy is already visible.'},
+  {date:'Sep 13',rho:.908,note:'By mid-September, national rank ordering already correlates above .90 with Selection Day.'},
+  {date:'Oct 1',rho:.969,note:'By October, the national hierarchy is highly stable in aggregate.'},
+  {date:'Oct 15',rho:.984,note:'Mid-October movement is increasingly concentrated among nearby teams.'},
+  {date:'Nov 1',rho:.996,note:'By Nov. 1, the national ordering is almost identical overall — but local ordering is not.'}
+];
+let rhoIndex=0;
+$('#dateSlider').oninput=e=>{rhoIndex=+e.target.value; updateRhoUI(); drawRhoChart();};
+function updateRhoUI(){const d=rhoData[rhoIndex];$('#rhoBig').textContent=d.rho.toFixed(3).replace(/^0/,'');$('#selectedDateText').textContent=d.date;$('#rhoInterpretation').textContent=d.note;}
+function drawRhoChart(){
+  const c=$('#rhoChart'); if(!c)return; const ctx=c.getContext('2d');
+  const dpr=window.devicePixelRatio||1; const w=c.clientWidth||900,h=c.clientHeight||330;
+  c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  const pad={l:54,r:24,t:22,b:42}; const x0=pad.l,y0=h-pad.b,x1=w-pad.r,y1=pad.t;
+  ctx.strokeStyle='#d9dee4';ctx.lineWidth=1;
+  [.8,.85,.9,.95,1].forEach(v=>{const y=y0-(v-.8)/.2*(y0-y1);ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();ctx.fillStyle='#7b8490';ctx.font='11px sans-serif';ctx.fillText(v.toFixed(2),7,y+4);});
+  const xs=rhoData.map((_,i)=>x0+i*(x1-x0)/(rhoData.length-1));
+  const ys=rhoData.map(d=>y0-(d.rho-.8)/.2*(y0-y1));
+  ctx.beginPath();ctx.moveTo(xs[0],ys[0]);for(let i=1;i<xs.length;i++)ctx.lineTo(xs[i],ys[i]);ctx.strokeStyle='#a31f34';ctx.lineWidth=3;ctx.stroke();
+  rhoData.forEach((d,i)=>{ctx.beginPath();ctx.arc(xs[i],ys[i],i===rhoIndex?7:4.5,0,Math.PI*2);ctx.fillStyle=i===rhoIndex?'#a31f34':'#fff';ctx.fill();ctx.strokeStyle='#a31f34';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#606a76';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText(d.date,xs[i],h-16);});
+  ctx.textAlign='start';
+}
+updateRhoUI();
+window.addEventListener('resize',()=>{if($('#stability').classList.contains('active'))drawRhoChart(); if(trajectoryData&&$('#trajectories').classList.contains('active'))drawTrajectoryChart();});
+
+// ---------- trajectories / Excel or CSV ----------
+let trajectoryData=null, teams=[], selectedTeams=[];
+
+$('#dataFile').onchange=async e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  try{
+    const ext=(f.name.split('.').pop()||'').toLowerCase();
+    if(ext==='csv'){
+      const text=await f.text();
+      loadTabularRows(parseCsv(text), f.name);
+    } else if(ext==='xlsx'){
+      const rows=await readXlsxRows(await f.arrayBuffer());
+      loadTabularRows(rows, f.name);
+    } else {
+      alert('Please choose an .xlsx or .csv file.');
+    }
+  }catch(err){
+    console.error(err);
+    alert('Could not read that file: '+(err?.message||err));
+  }
+};
+
+function parseCsv(text){
+  const rows=[];let row=[],field='',q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){if(ch==='"'&&text[i+1]==='"'){field+='"';i++;}else if(ch==='"')q=false;else field+=ch;}
+    else{if(ch==='"')q=true;else if(ch===','){row.push(field);field='';}else if(ch==='\n'){row.push(field.replace(/\r$/,''));rows.push(row);row=[];field='';}else field+=ch;}
+  }
+  if(field||row.length){row.push(field);rows.push(row);}return rows;
+}
+
+// Minimal XLSX reader for this local demo. XLSX files are ZIP containers of XML.
+// Uses the browser's built-in DecompressionStream, so no external library or internet is required.
+async function readXlsxRows(arrayBuffer){
+  if(typeof DecompressionStream==='undefined'){
+    throw new Error('This browser cannot unpack .xlsx files locally. Please open the demo in a current Chrome, Edge, or Safari browser.');
+  }
+  const files=await unzipXlsx(arrayBuffer);
+  const getText=path=>{
+    const bytes=files[path];
+    if(!bytes)throw new Error('Missing '+path+' inside workbook.');
+    return new TextDecoder('utf-8').decode(bytes);
+  };
+  const parseXml=text=>{
+    const doc=new DOMParser().parseFromString(text,'application/xml');
+    if(doc.getElementsByTagName('parsererror').length)throw new Error('Invalid workbook XML.');
+    return doc;
+  };
+
+  const shared=[];
+  if(files['xl/sharedStrings.xml']){
+    const ss=parseXml(getText('xl/sharedStrings.xml'));
+    [...ss.getElementsByTagName('si')].forEach(si=>{
+      shared.push([...si.getElementsByTagName('t')].map(t=>t.textContent||'').join(''));
+    });
+  }
+
+  const wb=parseXml(getText('xl/workbook.xml'));
+  const rels=parseXml(getText('xl/_rels/workbook.xml.rels'));
+  const relMap={};
+  [...rels.getElementsByTagName('Relationship')].forEach(r=>{
+    relMap[r.getAttribute('Id')]=r.getAttribute('Target');
+  });
+
+  const sheetNodes=[...wb.getElementsByTagName('sheet')];
+  if(!sheetNodes.length)throw new Error('Workbook has no worksheets.');
+
+  let firstRows=null;
+  for(const sh of sheetNodes){
+    const rid=sh.getAttribute('r:id') || sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+    let target=relMap[rid];
+    if(!target)continue;
+    target=target.replace(/^\//,'');
+    const path=target.startsWith('xl/')?target:'xl/'+target.replace(/^\.\//,'');
+    if(!files[path])continue;
+    const rows=parseWorksheetXml(parseXml(getText(path)),shared);
+    if(!firstRows)firstRows=rows;
+    const hdr=(rows[0]||[]).map(x=>String(x??'').trim().toLowerCase());
+    if(hdr.includes('date') && hdr.includes('team_name') && hdr.includes('npi'))return rows;
+  }
+  if(firstRows)return firstRows;
+  throw new Error('Could not find a readable worksheet.');
+}
+
+function parseWorksheetXml(doc,shared){
+  const rows=[];
+  const rowNodes=[...doc.getElementsByTagName('row')];
+  for(const rowNode of rowNodes){
+    const row=[];
+    for(const c of [...rowNode.getElementsByTagName('c')]){
+      const ref=c.getAttribute('r')||'';
+      const letters=(ref.match(/[A-Z]+/i)||['A'])[0].toUpperCase();
+      const ci=colLettersToIndex(letters);
+      const type=c.getAttribute('t')||'';
+      let value='';
+      if(type==='inlineStr'){
+        value=[...c.getElementsByTagName('t')].map(t=>t.textContent||'').join('');
+      }else{
+        const v=c.getElementsByTagName('v')[0];
+        const raw=v?v.textContent:'';
+        if(type==='s')value=shared[Number(raw)]??'';
+        else if(type==='b')value=raw==='1'?'TRUE':'FALSE';
+        else value=raw;
+      }
+      row[ci]=value;
+    }
+    rows.push(row.map(v=>v??''));
+  }
+  return rows;
+}
+
+function colLettersToIndex(s){
+  let n=0;for(const ch of s)n=n*26+(ch.charCodeAt(0)-64);return n-1;
+}
+
+function excelDateToIso(v){
+  const n=Number(v);
+  if(!Number.isFinite(n) || n<20000 || n>80000)return String(v??'');
+  const ms=Date.UTC(1899,11,30)+Math.round(n*86400000);
+  return new Date(ms).toISOString().slice(0,10);
+}
+
+async function unzipXlsx(arrayBuffer){
+  const bytes=new Uint8Array(arrayBuffer), view=new DataView(arrayBuffer);
+  const sig=0x06054b50;
+  let eocd=-1;
+  for(let i=Math.max(0,bytes.length-65557);i<=bytes.length-22;i++){
+    if(view.getUint32(i,true)===sig)eocd=i;
+  }
+  if(eocd<0)throw new Error('Not a valid .xlsx ZIP file.');
+  const entries=view.getUint16(eocd+10,true);
+  let pos=view.getUint32(eocd+16,true);
+  const out={};
+  for(let k=0;k<entries;k++){
+    if(view.getUint32(pos,true)!==0x02014b50)throw new Error('Invalid XLSX directory.');
+    const method=view.getUint16(pos+10,true);
+    const compSize=view.getUint32(pos+20,true);
+    const nameLen=view.getUint16(pos+28,true);
+    const extraLen=view.getUint16(pos+30,true);
+    const commentLen=view.getUint16(pos+32,true);
+    const localOffset=view.getUint32(pos+42,true);
+    const name=new TextDecoder('utf-8').decode(bytes.slice(pos+46,pos+46+nameLen));
+    if(view.getUint32(localOffset,true)!==0x04034b50)throw new Error('Invalid XLSX entry.');
+    const localNameLen=view.getUint16(localOffset+26,true);
+    const localExtraLen=view.getUint16(localOffset+28,true);
+    const dataStart=localOffset+30+localNameLen+localExtraLen;
+    const compressed=bytes.slice(dataStart,dataStart+compSize);
+    if(method===0){
+      out[name]=compressed;
+    }else if(method===8){
+      const ds=new DecompressionStream('deflate-raw');
+      const stream=new Blob([compressed]).stream().pipeThrough(ds);
+      out[name]=new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    pos+=46+nameLen+extraLen+commentLen;
+  }
+  return out;
+}
+
+function loadTabularRows(rows,sourceName='file'){
+  while(rows.length && rows[0].every(x=>String(x??'').trim()===''))rows.shift();
+  if(!rows.length){alert('The selected file is empty.');return;}
+  const headers=rows.shift().map(h=>String(h??'').trim());
+  const idx=Object.fromEntries(headers.map((h,i)=>[h.toLowerCase(),i]));
+  if(idx.date==null||idx.team_name==null||idx.npi==null){
+    alert('File must contain date, team_name, and npi columns.');return;
+  }
+  trajectoryData=rows.map(r=>{
+    let date=r[idx.date];
+    if(/^\d+(\.\d+)?$/.test(String(date??'').trim()))date=excelDateToIso(date);
+    return {date:String(date??'').slice(0,10),team:String(r[idx.team_name]??'').trim(),npi:+r[idx.npi]};
+  }).filter(x=>x.date&&x.team&&Number.isFinite(x.npi));
+  if(!trajectoryData.length){alert('No usable trajectory rows were found in '+sourceName+'.');return;}
+  teams=[...new Set(trajectoryData.map(x=>x.team))].sort();
+  $('#teamList').innerHTML=teams.map(t=>`<option value="${escapeHtml(t)}"></option>`).join('');
+  $('#trajectoryUI').classList.add('ready');
+  const defaults=['mit','tufts','wisoshkosh','east tex baptist','juniata'];
+  selectedTeams=[];
+  for(const d of defaults){const match=teams.find(t=>t.replace(/[^a-z0-9]/gi,'').toLowerCase()===d.replace(/[^a-z0-9]/gi,''));if(match&&selectedTeams.length<5)selectedTeams.push(match);}
+  if(!selectedTeams.length)selectedTeams=teams.slice(0,3);
+  renderChips();drawTrajectoryChart();
+}
+
+$('#addTeam').onclick=()=>{const t=$('#teamSearch').value;if(teams.includes(t)&&!selectedTeams.includes(t)&&selectedTeams.length<5){selectedTeams.push(t);$('#teamSearch').value='';renderChips();drawTrajectoryChart();}};
+$('#clearTeams').onclick=()=>{selectedTeams=[];renderChips();drawTrajectoryChart();};
+function renderChips(){$('#teamChips').innerHTML=selectedTeams.map(t=>`<span class="chip">${escapeHtml(t)}<button data-team="${escapeHtml(t)}">×</button></span>`).join('');$$('#teamChips [data-team]').forEach(b=>b.onclick=()=>{selectedTeams=selectedTeams.filter(t=>t!==b.dataset.team);renderChips();drawTrajectoryChart();});}
+function drawTrajectoryChart(){
+  if(!trajectoryData)return;const c=$('#trajectoryChart'),ctx=c.getContext('2d');const dpr=window.devicePixelRatio||1,w=c.clientWidth||1100,h=c.clientHeight||430;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  if(!selectedTeams.length){ctx.fillStyle='#7b8490';ctx.font='15px sans-serif';ctx.fillText('Add a team to begin.',25,35);return;}
+  const series=selectedTeams.map(t=>trajectoryData.filter(x=>x.team===t).sort((a,b)=>a.date.localeCompare(b.date)));
+  const dates=[...new Set(series.flat().map(x=>x.date))].sort();const vals=series.flat().map(x=>x.npi);let ymin=Math.floor(Math.min(...vals)-2),ymax=Math.ceil(Math.max(...vals)+2);if(ymax-ymin<10){ymin-=5;ymax+=5;}
+  const pad={l:58,r:24,t:28,b:52},x0=pad.l,x1=w-pad.r,y0=h-pad.b,y1=pad.t;
+  ctx.strokeStyle='#dde2e8';ctx.lineWidth=1;for(let i=0;i<=4;i++){const v=ymin+i*(ymax-ymin)/4,y=y0-i*(y0-y1)/4;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();ctx.fillStyle='#7b8490';ctx.font='11px sans-serif';ctx.fillText(v.toFixed(0),14,y+4);}
+  const palette=['#a31f34','#1f6aa5','#17805b','#ad6b08','#6845a8'];
+  series.forEach((s,si)=>{ctx.beginPath();s.forEach((p,i)=>{const xi=dates.indexOf(p.date),x=x0+(dates.length===1?0:xi/(dates.length-1))*(x1-x0),y=y0-(p.npi-ymin)/(ymax-ymin)*(y0-y1);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle=palette[si];ctx.lineWidth=2.4;ctx.stroke();});
+  const ticks=Math.min(5,dates.length);ctx.textAlign='center';for(let i=0;i<ticks;i++){const di=ticks===1?0:Math.round(i*(dates.length-1)/(ticks-1)),x=x0+(dates.length===1?0:di/(dates.length-1))*(x1-x0);ctx.fillStyle='#7b8490';ctx.font='11px sans-serif';ctx.fillText(shortDate(dates[di]),x,h-20);}ctx.textAlign='start';
+  let lx=x0;selectedTeams.forEach((t,i)=>{ctx.fillStyle=palette[i];ctx.fillRect(lx,7,12,4);ctx.fillStyle='#4d5660';ctx.font='11px sans-serif';ctx.fillText(t,lx+18,14);lx+=18+ctx.measureText(t).width+22;});
+}
+function shortDate(s){const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+</script>
+</body>
+</html>
