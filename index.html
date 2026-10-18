@@ -266,16 +266,17 @@
     <div class="hero">
       <div>
         <h1>Explore team trajectories</h1>
-        <p class="lede">Load the frozen master NPI Excel or CSV file and compare up to five teams across the full 2025 season. Everything runs locally in your browser; the file never leaves your computer.</p>
+        <p class="lede">Compare teams across the reconstructed 2025 season. The full day-by-day NPI dataset loads automatically when this page is hosted on GitHub Pages.</p>
       </div>
-      <span class="pill">Optional live-data demo</span>
+      <span class="pill">2025 full-season data</span>
     </div>
     <div class="card">
       <div class="card-b">
-        <label class="upload-zone" for="dataFile">
+        <div id="autoLoadStatus" class="takeaway" style="margin-top:0"><strong>Loading:</strong> 2025 day-by-day NPI data…</div>
+        <label id="fallbackUpload" class="upload-zone" for="dataFile" style="display:none; margin-top:14px">
           <input id="dataFile" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
-          <div class="u-title">Load the frozen 2025 daily NPI file</div>
-          <div class="u-sub">Choose an .xlsx or .csv file containing date, team_name, and npi columns.</div>
+          <div class="u-title">Dataset could not be loaded automatically</div>
+          <div class="u-sub">For local/offline use, choose the 2025 .xlsx or .csv file containing date, team_name, and npi columns.</div>
           <span class="btn primary">Choose Excel / CSV</span>
         </label>
         <div id="trajectoryUI" class="trajectory-ui">
@@ -292,7 +293,7 @@
     </div>
   </section>
 
-  <div class="footer-note">Self-contained local demo · no server or internet connection required</div>
+  <div class="footer-note">Interactive research demo · bundled 2025 data on GitHub Pages</div>
 </main>
 
 <script>
@@ -441,8 +442,28 @@ function drawRhoChart(){
 updateRhoUI();
 window.addEventListener('resize',()=>{if($('#stability').classList.contains('active'))drawRhoChart(); if(trajectoryData&&$('#trajectories').classList.contains('active'))drawTrajectoryChart();});
 
-// ---------- trajectories / Excel or CSV ----------
+// ---------- trajectories / bundled CSV (with Excel/CSV fallback upload) ----------
 let trajectoryData=null, teams=[], selectedTeams=[];
+const TRAJECTORY_DATA_URL = './wvb_2025_daily_npi_master_final.csv';
+
+async function autoLoadTrajectoryData(){
+  const status=$('#autoLoadStatus');
+  const fallback=$('#fallbackUpload');
+  try{
+    const response=await fetch(TRAJECTORY_DATA_URL,{cache:'no-store'});
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    const text=await response.text();
+    const rows=parseCsv(text);
+    loadTabularRows(rows,'bundled 2025 dataset');
+    if(!trajectoryData?.length)throw new Error('No usable rows found');
+    status.innerHTML=`<strong>Loaded:</strong> ${trajectoryData.length.toLocaleString()} daily team-NPI observations for ${teams.length.toLocaleString()} teams.`;
+    fallback.style.display='none';
+  }catch(err){
+    console.warn('Automatic trajectory data load failed:',err);
+    status.innerHTML='<strong>Local mode:</strong> the hosted dataset is not available from this file location. Choose the workbook below, or open the GitHub Pages version for automatic loading.';
+    fallback.style.display='block';
+  }
+}
 
 $('#dataFile').onchange=async e=>{
   const f=e.target.files[0];
@@ -642,6 +663,8 @@ function drawTrajectoryChart(){
   let lx=x0;selectedTeams.forEach((t,i)=>{ctx.fillStyle=palette[i];ctx.fillRect(lx,7,12,4);ctx.fillStyle='#4d5660';ctx.font='11px sans-serif';ctx.fillText(t,lx+18,14);lx+=18+ctx.measureText(t).width+22;});
 }
 function shortDate(s){const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+autoLoadTrajectoryData();
 </script>
 </body>
 </html>
