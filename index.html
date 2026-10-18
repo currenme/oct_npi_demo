@@ -125,19 +125,49 @@
   .mini .t { margin-top:3px; color:var(--muted); font-size:11px; line-height:1.3; }
   .takeaway { margin-top:12px; border-left:4px solid var(--mit); padding:12px 14px; background:#fff8f9; border-radius:0 10px 10px 0; font-size:13px; line-height:1.55; }
 
-  /* trajectories */
+  /* season explorer */
   .upload-zone { border:1.5px dashed #cbd2da; border-radius:16px; padding:28px; text-align:center; background:#fafbfc; }
   .upload-zone input { display:none; }
   .upload-zone .u-title { font-size:18px; font-weight:850; }
   .upload-zone .u-sub { color:var(--muted); font-size:12px; margin:7px 0 14px; }
   .trajectory-ui { display:none; margin-top:18px; }
   .trajectory-ui.ready { display:block; }
-  .team-picker { display:flex; gap:9px; align-items:end; margin-bottom:12px; flex-wrap:wrap; }
+  .season-toolbar { display:grid; grid-template-columns:minmax(280px,1fr) auto; gap:14px; align-items:end; margin-bottom:12px; }
+  .team-picker { display:flex; gap:9px; align-items:end; flex-wrap:wrap; }
   .team-picker .search { min-width:250px; flex:1; }
-  .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px; }
+  .metric-picker { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .metric-picker .label { color:var(--muted); font-size:10px; font-weight:850; text-transform:uppercase; letter-spacing:.07em; }
+  .metric-toggle { display:flex; background:#eef1f3; padding:4px; border-radius:10px; }
+  .metric-toggle button { border:0; background:transparent; padding:8px 12px; border-radius:8px; font-size:12px; font-weight:800; color:#68717d; cursor:pointer; }
+  .metric-toggle button.active { background:#fff; color:var(--ink); box-shadow:0 2px 7px rgba(0,0,0,.08); }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; }
   .chip { display:inline-flex; gap:7px; align-items:center; padding:7px 9px; background:#f0f2f4; border-radius:999px; font-size:11px; font-weight:750; }
   .chip button { border:0; background:transparent; cursor:pointer; color:#88919b; padding:0; }
+  .season-datebar { display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; padding:14px 16px; border:1px solid var(--line); border-radius:14px; background:#fbfbfc; margin-bottom:14px; }
+  .play-btn { min-width:118px; }
+  .season-slider-wrap input { width:100%; accent-color:var(--mit); }
+  .season-slider-meta { display:flex; justify-content:space-between; color:#7b8490; font-size:10px; margin-top:5px; }
+  .season-date { min-width:92px; text-align:right; }
+  .season-date .big { font-size:18px; font-weight:850; }
+  .season-date .small { color:var(--muted); font-size:10px; margin-top:3px; }
+  .team-snapshots { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:9px; margin-bottom:14px; }
+  .snapshot { border:1px solid var(--line); border-radius:13px; padding:12px; background:#fff; min-height:108px; }
+  .snapshot .team { font-size:11px; font-weight:850; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .snapshot .main { margin-top:8px; font-size:25px; font-weight:900; letter-spacing:-.04em; line-height:1; }
+  .snapshot .meta { margin-top:7px; color:var(--muted); font-size:10px; line-height:1.45; }
+  .snapshot .delta.up { color:var(--green); }
+  .snapshot .delta.down { color:var(--mit); }
+  .chart-shell { border:1px solid var(--line); border-radius:14px; padding:12px; position:relative; }
+  .chart-note { margin-top:9px; color:var(--muted); font-size:10px; line-height:1.45; }
   .footer-note { margin-top:20px; color:#8a929c; font-size:11px; text-align:center; }
+  @media (max-width: 1100px) { .team-snapshots { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media (max-width: 760px) {
+    .season-toolbar { grid-template-columns:1fr; }
+    .metric-picker { align-items:flex-start; }
+    .season-datebar { grid-template-columns:1fr; }
+    .season-date { text-align:left; }
+    .team-snapshots { grid-template-columns:1fr; }
+  }
   @media (max-width: 980px) {
     .grid-main, .stability-grid { grid-template-columns:1fr; }
     .controls { grid-template-columns:1fr 1fr; }
@@ -157,7 +187,7 @@
   <nav class="tabs">
     <button class="tab-btn active" data-tab="builder">Build an NPI</button>
     <button class="tab-btn" data-tab="stability">Ranking stability</button>
-    <button class="tab-btn" data-tab="trajectories">Team trajectories</button>
+    <button class="tab-btn" data-tab="trajectories">Season explorer</button>
   </nav>
 </header>
 
@@ -166,15 +196,17 @@
     <div class="hero">
       <div>
         <h1>Build your own NPI</h1>
-        <p class="lede">Change opponents, results, and NCAA “dials” and watch the résumé recalculate instantly. Green rows are retained in the NPI; faded rows are excluded.</p>
+        <p class="lede">Build a hypothetical single-team résumé and see the resulting NPI. Opponent NPIs are held fixed; green rows are retained and faded rows are excluded.</p>
       </div>
       <span class="pill">2025 NCAA defaults loaded</span>
     </div>
 
+    <div class="takeaway" style="margin:0 0 18px 0"><strong>Scope:</strong> this tab calculates one team’s résumé using the opponent NPIs shown. It does not recompute opponent NPIs or propagate a changed result through the full Division III network.</div>
+
     <div class="grid-main">
       <div class="card">
         <div class="card-h">
-          <div><h2>Your résumé</h2><div class="small">Start with 10 opponents, then add more to see retained-win behavior</div></div>
+          <div><h2>Your résumé</h2><div class="small">Applies the WVB game-value and retained-game rules to one team</div></div>
           <button class="btn ghost-red" id="resetSchedule">Reset example</button>
         </div>
         <div class="card-b">
@@ -200,10 +232,10 @@
       </div>
 
       <aside class="card">
-        <div class="card-h"><h3>Calculated result</h3><span class="small">recursive fixed point</span></div>
+        <div class="card-h"><h3>Calculated résumé NPI</h3><span class="small">opponent NPIs held fixed</span></div>
         <div class="card-b">
           <div class="stat-hero">
-            <div class="stat primary"><div class="label">Team NPI</div><div class="value" id="teamNpi">—</div><div class="detail" id="iterationDetail">—</div></div>
+            <div class="stat primary"><div class="label">Team NPI</div><div class="value" id="teamNpi">—</div><div class="detail" id="iterationDetail">Single-team calculator</div></div>
             <div class="stat"><div class="label">Record</div><div class="value" id="teamRecord">—</div><div class="detail" id="retainedDetail">—</div></div>
           </div>
           <div class="formula">
@@ -265,10 +297,10 @@
   <section id="trajectories" class="section">
     <div class="hero">
       <div>
-        <h1>Explore team trajectories</h1>
-        <p class="lede">Compare teams across the reconstructed 2025 season. The full day-by-day NPI dataset loads automatically when this page is hosted on GitHub Pages.</p>
+        <h1>Explore the 2025 season</h1>
+        <p class="lede">Select teams, drag the date slider, and watch their NPI, national rank, and record evolve through the reconstructed season.</p>
       </div>
-      <span class="pill">2025 full-season data</span>
+      <span class="pill">34,311 daily team snapshots</span>
     </div>
     <div class="card">
       <div class="card-b">
@@ -276,18 +308,42 @@
         <label id="fallbackUpload" class="upload-zone" for="dataFile" style="display:none; margin-top:14px">
           <input id="dataFile" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
           <div class="u-title">Dataset could not be loaded automatically</div>
-          <div class="u-sub">For local/offline use, choose the 2025 .xlsx or .csv file containing date, team_name, and npi columns.</div>
+          <div class="u-sub">For local/offline use, choose the 2025 file containing date, team_name, npi, wins, and losses.</div>
           <span class="btn primary">Choose Excel / CSV</span>
         </label>
+
         <div id="trajectoryUI" class="trajectory-ui">
-          <div class="team-picker">
-            <label class="search field">Search team<input id="teamSearch" list="teamList" placeholder="MIT, Tufts, Wis.-Oshkosh…"></label>
-            <datalist id="teamList"></datalist>
-            <button id="addTeam" class="btn primary">Add team</button>
-            <button id="clearTeams" class="btn">Clear</button>
+          <div class="season-toolbar">
+            <div class="team-picker">
+              <label class="search field">Search team<input id="teamSearch" list="teamList" placeholder="MIT, Tufts, Wis.-Oshkosh…"></label>
+              <datalist id="teamList"></datalist>
+              <button id="addTeam" class="btn primary">Add team</button>
+              <button id="clearTeams" class="btn">Clear</button>
+            </div>
+            <div class="metric-picker">
+              <div class="label">Chart metric</div>
+              <div class="metric-toggle">
+                <button class="active" data-season-metric="npi">NPI</button>
+                <button data-season-metric="rank">National rank</button>
+              </div>
+            </div>
           </div>
+
           <div id="teamChips" class="chips"></div>
-          <div style="border:1px solid var(--line); border-radius:14px; padding:12px;"><canvas id="trajectoryChart" width="1100" height="430"></canvas></div>
+
+          <div class="season-datebar">
+            <button id="playSeason" class="btn primary play-btn">▶ Play season</button>
+            <div class="season-slider-wrap">
+              <input id="seasonSlider" type="range" min="0" max="1" step="1" value="0">
+              <div class="season-slider-meta"><span id="seasonStart">Aug 29</span><span>Drag to inspect any date</span><span id="seasonEnd">Dec 6</span></div>
+            </div>
+            <div class="season-date"><div class="big" id="seasonDateText">—</div><div class="small">selected date</div></div>
+          </div>
+
+          <div id="teamSnapshots" class="team-snapshots"></div>
+
+          <div class="chart-shell"><canvas id="trajectoryChart" width="1100" height="430"></canvas></div>
+          <div class="chart-note">The vertical marker is the selected date. National rank is computed from the reconstructed NPI ordering on each date. If a team has not yet entered the active NPI network, its card will show “Not yet active.”</div>
         </div>
       </div>
     </div>
@@ -394,7 +450,7 @@ function updateSummary(r){
   $('#teamRecord').textContent=`${w}-${l}`;
   const rc=r.retained.size;
   $('#retainedDetail').textContent=r.zeroWins?'Zero-win special case':`${rc} of ${opponents.length} games retained`;
-  $('#iterationDetail').textContent=`Solved in ${r.iterations} iteration${r.iterations===1?'':'s'}`;
+  $('#iterationDetail').textContent='Opponent NPIs held fixed';
   const pct=opponents.length?100*rc/opponents.length:0;
   $('#retainedPct').textContent=`${Math.round(pct)}%`;
   $('#retainedBar').style.width=pct+'%';
@@ -442,8 +498,10 @@ function drawRhoChart(){
 updateRhoUI();
 window.addEventListener('resize',()=>{if($('#stability').classList.contains('active'))drawRhoChart(); if(trajectoryData&&$('#trajectories').classList.contains('active'))drawTrajectoryChart();});
 
-// ---------- trajectories / bundled CSV (with Excel/CSV fallback upload) ----------
+// ---------- 2025 season explorer / bundled CSV (with Excel/CSV fallback upload) ----------
 let trajectoryData=null, teams=[], selectedTeams=[];
+let seasonDates=[], seasonMetric='npi', selectedDateIndex=0, playTimer=null;
+let rowsByDate=new Map(), rowLookup=new Map();
 const TRAJECTORY_DATA_URL = './wvb_2025_daily_npi_master_final.csv';
 
 async function autoLoadTrajectoryData(){
@@ -456,11 +514,11 @@ async function autoLoadTrajectoryData(){
     const rows=parseCsv(text);
     loadTabularRows(rows,'bundled 2025 dataset');
     if(!trajectoryData?.length)throw new Error('No usable rows found');
-    status.innerHTML=`<strong>Loaded:</strong> ${trajectoryData.length.toLocaleString()} daily team-NPI observations for ${teams.length.toLocaleString()} teams.`;
+    status.innerHTML=`<strong>Loaded:</strong> ${trajectoryData.length.toLocaleString()} daily team snapshots for ${teams.length.toLocaleString()} teams.`;
     fallback.style.display='none';
   }catch(err){
-    console.warn('Automatic trajectory data load failed:',err);
-    status.innerHTML='<strong>Local mode:</strong> the hosted dataset is not available from this file location. Choose the workbook below, or open the GitHub Pages version for automatic loading.';
+    console.warn('Automatic season data load failed:',err);
+    status.innerHTML='<strong>Local mode:</strong> the hosted dataset is not available from this file location. Choose the data file below, or open the GitHub Pages version for automatic loading.';
     fallback.style.display='block';
   }
 }
@@ -495,11 +553,10 @@ function parseCsv(text){
   if(field||row.length){row.push(field);rows.push(row);}return rows;
 }
 
-// Minimal XLSX reader for this local demo. XLSX files are ZIP containers of XML.
-// Uses the browser's built-in DecompressionStream, so no external library or internet is required.
+// Minimal XLSX reader for local fallback use. GitHub Pages uses the bundled CSV above.
 async function readXlsxRows(arrayBuffer){
   if(typeof DecompressionStream==='undefined'){
-    throw new Error('This browser cannot unpack .xlsx files locally. Please open the demo in a current Chrome, Edge, or Safari browser.');
+    throw new Error('This browser cannot unpack .xlsx files locally. Please use the bundled GitHub Pages version or a CSV file.');
   }
   const files=await unzipXlsx(arrayBuffer);
   const getText=path=>{
@@ -524,13 +581,10 @@ async function readXlsxRows(arrayBuffer){
   const wb=parseXml(getText('xl/workbook.xml'));
   const rels=parseXml(getText('xl/_rels/workbook.xml.rels'));
   const relMap={};
-  [...rels.getElementsByTagName('Relationship')].forEach(r=>{
-    relMap[r.getAttribute('Id')]=r.getAttribute('Target');
-  });
+  [...rels.getElementsByTagName('Relationship')].forEach(r=>{ relMap[r.getAttribute('Id')]=r.getAttribute('Target'); });
 
   const sheetNodes=[...wb.getElementsByTagName('sheet')];
   if(!sheetNodes.length)throw new Error('Workbook has no worksheets.');
-
   let firstRows=null;
   for(const sh of sheetNodes){
     const rid=sh.getAttribute('r:id') || sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
@@ -559,9 +613,8 @@ function parseWorksheetXml(doc,shared){
       const ci=colLettersToIndex(letters);
       const type=c.getAttribute('t')||'';
       let value='';
-      if(type==='inlineStr'){
-        value=[...c.getElementsByTagName('t')].map(t=>t.textContent||'').join('');
-      }else{
+      if(type==='inlineStr') value=[...c.getElementsByTagName('t')].map(t=>t.textContent||'').join('');
+      else{
         const v=c.getElementsByTagName('v')[0];
         const raw=v?v.textContent:'';
         if(type==='s')value=shared[Number(raw)]??'';
@@ -574,46 +627,31 @@ function parseWorksheetXml(doc,shared){
   }
   return rows;
 }
-
-function colLettersToIndex(s){
-  let n=0;for(const ch of s)n=n*26+(ch.charCodeAt(0)-64);return n-1;
-}
-
+function colLettersToIndex(s){ let n=0;for(const ch of s)n=n*26+(ch.charCodeAt(0)-64);return n-1; }
 function excelDateToIso(v){
   const n=Number(v);
   if(!Number.isFinite(n) || n<20000 || n>80000)return String(v??'');
   const ms=Date.UTC(1899,11,30)+Math.round(n*86400000);
   return new Date(ms).toISOString().slice(0,10);
 }
-
 async function unzipXlsx(arrayBuffer){
   const bytes=new Uint8Array(arrayBuffer), view=new DataView(arrayBuffer);
-  const sig=0x06054b50;
-  let eocd=-1;
-  for(let i=Math.max(0,bytes.length-65557);i<=bytes.length-22;i++){
-    if(view.getUint32(i,true)===sig)eocd=i;
-  }
+  const sig=0x06054b50; let eocd=-1;
+  for(let i=Math.max(0,bytes.length-65557);i<=bytes.length-22;i++){ if(view.getUint32(i,true)===sig)eocd=i; }
   if(eocd<0)throw new Error('Not a valid .xlsx ZIP file.');
-  const entries=view.getUint16(eocd+10,true);
-  let pos=view.getUint32(eocd+16,true);
-  const out={};
+  const entries=view.getUint16(eocd+10,true); let pos=view.getUint32(eocd+16,true); const out={};
   for(let k=0;k<entries;k++){
     if(view.getUint32(pos,true)!==0x02014b50)throw new Error('Invalid XLSX directory.');
-    const method=view.getUint16(pos+10,true);
-    const compSize=view.getUint32(pos+20,true);
-    const nameLen=view.getUint16(pos+28,true);
-    const extraLen=view.getUint16(pos+30,true);
-    const commentLen=view.getUint16(pos+32,true);
+    const method=view.getUint16(pos+10,true), compSize=view.getUint32(pos+20,true);
+    const nameLen=view.getUint16(pos+28,true), extraLen=view.getUint16(pos+30,true), commentLen=view.getUint16(pos+32,true);
     const localOffset=view.getUint32(pos+42,true);
     const name=new TextDecoder('utf-8').decode(bytes.slice(pos+46,pos+46+nameLen));
     if(view.getUint32(localOffset,true)!==0x04034b50)throw new Error('Invalid XLSX entry.');
-    const localNameLen=view.getUint16(localOffset+26,true);
-    const localExtraLen=view.getUint16(localOffset+28,true);
+    const localNameLen=view.getUint16(localOffset+26,true), localExtraLen=view.getUint16(localOffset+28,true);
     const dataStart=localOffset+30+localNameLen+localExtraLen;
     const compressed=bytes.slice(dataStart,dataStart+compSize);
-    if(method===0){
-      out[name]=compressed;
-    }else if(method===8){
+    if(method===0) out[name]=compressed;
+    else if(method===8){
       const ds=new DecompressionStream('deflate-raw');
       const stream=new Blob([compressed]).stream().pipeThrough(ds);
       out[name]=new Uint8Array(await new Response(stream).arrayBuffer());
@@ -628,41 +666,208 @@ function loadTabularRows(rows,sourceName='file'){
   if(!rows.length){alert('The selected file is empty.');return;}
   const headers=rows.shift().map(h=>String(h??'').trim());
   const idx=Object.fromEntries(headers.map((h,i)=>[h.toLowerCase(),i]));
-  if(idx.date==null||idx.team_name==null||idx.npi==null){
-    alert('File must contain date, team_name, and npi columns.');return;
-  }
+  if(idx.date==null||idx.team_name==null||idx.npi==null){ alert('File must contain date, team_name, and npi columns.');return; }
+
   trajectoryData=rows.map(r=>{
     let date=r[idx.date];
     if(/^\d+(\.\d+)?$/.test(String(date??'').trim()))date=excelDateToIso(date);
-    return {date:String(date??'').slice(0,10),team:String(r[idx.team_name]??'').trim(),npi:+r[idx.npi]};
+    return {
+      date:String(date??'').slice(0,10),
+      team:String(r[idx.team_name]??'').trim(),
+      npi:+r[idx.npi],
+      wins: idx.wins!=null ? +r[idx.wins] : NaN,
+      losses: idx.losses!=null ? +r[idx.losses] : NaN,
+      games: idx.games_played!=null ? +r[idx.games_played] : NaN
+    };
   }).filter(x=>x.date&&x.team&&Number.isFinite(x.npi));
-  if(!trajectoryData.length){alert('No usable trajectory rows were found in '+sourceName+'.');return;}
+  if(!trajectoryData.length){alert('No usable season rows were found in '+sourceName+'.');return;}
+
+  rowsByDate=new Map(); rowLookup=new Map();
+  for(const row of trajectoryData){
+    if(!rowsByDate.has(row.date))rowsByDate.set(row.date,[]);
+    rowsByDate.get(row.date).push(row);
+  }
+  seasonDates=[...rowsByDate.keys()].sort();
+
+  // Compute national rank from that date's reconstructed NPI ordering.
+  for(const date of seasonDates){
+    const arr=rowsByDate.get(date).sort((a,b)=>b.npi-a.npi || a.team.localeCompare(b.team));
+    let lastNpi=null, lastRank=0;
+    arr.forEach((row,i)=>{
+      if(lastNpi===null || Math.abs(row.npi-lastNpi)>1e-12){ lastRank=i+1; lastNpi=row.npi; }
+      row.rank=lastRank;
+      rowLookup.set(date+'\u0000'+row.team,row);
+    });
+  }
+
   teams=[...new Set(trajectoryData.map(x=>x.team))].sort();
   $('#teamList').innerHTML=teams.map(t=>`<option value="${escapeHtml(t)}"></option>`).join('');
   $('#trajectoryUI').classList.add('ready');
-  const defaults=['mit','tufts','wisoshkosh','east tex baptist','juniata'];
+
+  const defaults=['MIT','Tufts','Wis.-Oshkosh'];
   selectedTeams=[];
-  for(const d of defaults){const match=teams.find(t=>t.replace(/[^a-z0-9]/gi,'').toLowerCase()===d.replace(/[^a-z0-9]/gi,''));if(match&&selectedTeams.length<5)selectedTeams.push(match);}
+  for(const d of defaults){ const match=teams.find(t=>normalizeName(t)===normalizeName(d)); if(match&&selectedTeams.length<5)selectedTeams.push(match); }
   if(!selectedTeams.length)selectedTeams=teams.slice(0,3);
-  renderChips();drawTrajectoryChart();
+
+  const preferredDate='2025-09-13';
+  selectedDateIndex=Math.max(0,seasonDates.indexOf(preferredDate));
+  if(selectedDateIndex<0)selectedDateIndex=0;
+  $('#seasonSlider').max=Math.max(0,seasonDates.length-1);
+  $('#seasonSlider').value=selectedDateIndex;
+  $('#seasonStart').textContent=shortDate(seasonDates[0]);
+  $('#seasonEnd').textContent=shortDate(seasonDates[seasonDates.length-1]);
+
+  renderChips();
+  updateSeasonView();
+}
+function normalizeName(s){return String(s).replace(/[^a-z0-9]/gi,'').toLowerCase();}
+
+$('#addTeam').onclick=()=>{
+  const t=$('#teamSearch').value;
+  if(teams.includes(t)&&!selectedTeams.includes(t)&&selectedTeams.length<5){
+    selectedTeams.push(t); $('#teamSearch').value=''; renderChips(); updateSeasonView();
+  }
+};
+$('#clearTeams').onclick=()=>{selectedTeams=[];renderChips();updateSeasonView();};
+function renderChips(){
+  $('#teamChips').innerHTML=selectedTeams.map(t=>`<span class="chip">${escapeHtml(t)}<button data-team="${escapeHtml(t)}">×</button></span>`).join('');
+  $$('#teamChips [data-team]').forEach(b=>b.onclick=()=>{selectedTeams=selectedTeams.filter(t=>t!==b.dataset.team);renderChips();updateSeasonView();});
 }
 
-$('#addTeam').onclick=()=>{const t=$('#teamSearch').value;if(teams.includes(t)&&!selectedTeams.includes(t)&&selectedTeams.length<5){selectedTeams.push(t);$('#teamSearch').value='';renderChips();drawTrajectoryChart();}};
-$('#clearTeams').onclick=()=>{selectedTeams=[];renderChips();drawTrajectoryChart();};
-function renderChips(){$('#teamChips').innerHTML=selectedTeams.map(t=>`<span class="chip">${escapeHtml(t)}<button data-team="${escapeHtml(t)}">×</button></span>`).join('');$$('#teamChips [data-team]').forEach(b=>b.onclick=()=>{selectedTeams=selectedTeams.filter(t=>t!==b.dataset.team);renderChips();drawTrajectoryChart();});}
-function drawTrajectoryChart(){
-  if(!trajectoryData)return;const c=$('#trajectoryChart'),ctx=c.getContext('2d');const dpr=window.devicePixelRatio||1,w=c.clientWidth||1100,h=c.clientHeight||430;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
-  if(!selectedTeams.length){ctx.fillStyle='#7b8490';ctx.font='15px sans-serif';ctx.fillText('Add a team to begin.',25,35);return;}
-  const series=selectedTeams.map(t=>trajectoryData.filter(x=>x.team===t).sort((a,b)=>a.date.localeCompare(b.date)));
-  const dates=[...new Set(series.flat().map(x=>x.date))].sort();const vals=series.flat().map(x=>x.npi);let ymin=Math.floor(Math.min(...vals)-2),ymax=Math.ceil(Math.max(...vals)+2);if(ymax-ymin<10){ymin-=5;ymax+=5;}
-  const pad={l:58,r:24,t:28,b:52},x0=pad.l,x1=w-pad.r,y0=h-pad.b,y1=pad.t;
-  ctx.strokeStyle='#dde2e8';ctx.lineWidth=1;for(let i=0;i<=4;i++){const v=ymin+i*(ymax-ymin)/4,y=y0-i*(y0-y1)/4;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();ctx.fillStyle='#7b8490';ctx.font='11px sans-serif';ctx.fillText(v.toFixed(0),14,y+4);}
-  const palette=['#a31f34','#1f6aa5','#17805b','#ad6b08','#6845a8'];
-  series.forEach((s,si)=>{ctx.beginPath();s.forEach((p,i)=>{const xi=dates.indexOf(p.date),x=x0+(dates.length===1?0:xi/(dates.length-1))*(x1-x0),y=y0-(p.npi-ymin)/(ymax-ymin)*(y0-y1);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle=palette[si];ctx.lineWidth=2.4;ctx.stroke();});
-  const ticks=Math.min(5,dates.length);ctx.textAlign='center';for(let i=0;i<ticks;i++){const di=ticks===1?0:Math.round(i*(dates.length-1)/(ticks-1)),x=x0+(dates.length===1?0:di/(dates.length-1))*(x1-x0);ctx.fillStyle='#7b8490';ctx.font='11px sans-serif';ctx.fillText(shortDate(dates[di]),x,h-20);}ctx.textAlign='start';
-  let lx=x0;selectedTeams.forEach((t,i)=>{ctx.fillStyle=palette[i];ctx.fillRect(lx,7,12,4);ctx.fillStyle='#4d5660';ctx.font='11px sans-serif';ctx.fillText(t,lx+18,14);lx+=18+ctx.measureText(t).width+22;});
+$$('[data-season-metric]').forEach(btn=>btn.onclick=()=>{
+  $$('[data-season-metric]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  seasonMetric=btn.dataset.seasonMetric;
+  updateSeasonView();
+});
+$('#seasonSlider').oninput=e=>{ selectedDateIndex=+e.target.value; updateSeasonView(); };
+$('#playSeason').onclick=()=>{
+  if(playTimer){ stopSeasonPlayback(); return; }
+  if(selectedDateIndex>=seasonDates.length-1){ selectedDateIndex=0; $('#seasonSlider').value=0; }
+  $('#playSeason').textContent='❚❚ Pause';
+  playTimer=setInterval(()=>{
+    if(selectedDateIndex>=seasonDates.length-1){ stopSeasonPlayback(); return; }
+    selectedDateIndex++;
+    $('#seasonSlider').value=selectedDateIndex;
+    updateSeasonView();
+  },260);
+};
+function stopSeasonPlayback(){ if(playTimer)clearInterval(playTimer); playTimer=null; $('#playSeason').textContent='▶ Play season'; }
+
+function updateSeasonView(){
+  if(!trajectoryData||!seasonDates.length)return;
+  const date=seasonDates[selectedDateIndex];
+  $('#seasonDateText').textContent=longDate(date);
+  renderSeasonSnapshots(date);
+  drawTrajectoryChart();
 }
-function shortDate(s){const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function renderSeasonSnapshots(date){
+  const host=$('#teamSnapshots');
+  if(!selectedTeams.length){ host.innerHTML='<div class="snapshot"><div class="team">No teams selected</div><div class="meta">Add up to five teams above.</div></div>'; return; }
+  host.innerHTML=selectedTeams.map(team=>{
+    const row=rowLookup.get(date+'\u0000'+team);
+    if(!row){ return `<div class="snapshot"><div class="team">${escapeHtml(team)}</div><div class="main">—</div><div class="meta">Not yet active on ${shortDate(date)}</div></div>`; }
+    const prior=findPriorRow(team,date,7);
+    let delta='';
+    if(prior){
+      if(seasonMetric==='npi'){
+        const d=row.npi-prior.npi; const cls=d>0?'up':d<0?'down':''; delta=`<span class="delta ${cls}">${d>=0?'+':''}${d.toFixed(2)} NPI vs. ~1 week earlier</span>`;
+      }else{
+        const d=prior.rank-row.rank; const cls=d>0?'up':d<0?'down':''; delta=`<span class="delta ${cls}">${d>0?'▲ '+d:d<0?'▼ '+Math.abs(d):'No'} rank${Math.abs(d)===1?'':'s'} vs. ~1 week earlier</span>`;
+      }
+    }
+    const main=seasonMetric==='npi'?row.npi.toFixed(3):'#'+row.rank;
+    const record=Number.isFinite(row.wins)&&Number.isFinite(row.losses)?`${row.wins}-${row.losses}`:'Record unavailable';
+    const other=seasonMetric==='npi'?`Rank #${row.rank}`:`NPI ${row.npi.toFixed(3)}`;
+    const gp=Number.isFinite(row.games)?` · ${row.games} GP`:'';
+    return `<div class="snapshot"><div class="team">${escapeHtml(team)}</div><div class="main">${main}</div><div class="meta">${other} · ${record}${gp}${delta?'<br>'+delta:''}</div></div>`;
+  }).join('');
+}
+function findPriorRow(team,date,daysBack){
+  const target=new Date(date+'T00:00:00Z').getTime()-daysBack*86400000;
+  for(let i=selectedDateIndex-1;i>=0;i--){
+    const d=seasonDates[i];
+    if(new Date(d+'T00:00:00Z').getTime()<=target){ return rowLookup.get(d+'\u0000'+team)||null; }
+  }
+  return null;
+}
+
+function drawTrajectoryChart(){
+  if(!trajectoryData)return;
+  const c=$('#trajectoryChart'),ctx=c.getContext('2d');
+  const dpr=window.devicePixelRatio||1,w=c.clientWidth||1100,h=c.clientHeight||430;
+  c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  if(!selectedTeams.length){ctx.fillStyle='#7b8490';ctx.font='15px sans-serif';ctx.fillText('Add a team to begin.',25,35);return;}
+
+  const series=selectedTeams.map(t=>trajectoryData.filter(x=>x.team===t).sort((a,b)=>a.date.localeCompare(b.date)));
+  const vals=series.flat().map(x=>seasonMetric==='npi'?x.npi:x.rank).filter(Number.isFinite);
+  if(!vals.length)return;
+  let ymin,ymax;
+  if(seasonMetric==='npi'){
+    ymin=Math.floor(Math.min(...vals)-2); ymax=Math.ceil(Math.max(...vals)+2);
+    if(ymax-ymin<10){ymin-=5;ymax+=5;}
+  }else{
+    ymin=Math.max(1,Math.floor(Math.min(...vals)-5)); ymax=Math.ceil(Math.max(...vals)+5);
+    if(ymax-ymin<15)ymax=ymin+15;
+  }
+
+  const pad={l:62,r:26,t:40,b:52},x0=pad.l,x1=w-pad.r,y0=h-pad.b,y1=pad.t;
+  ctx.strokeStyle='#dde2e8';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const v=ymin+i*(ymax-ymin)/4;
+    const y=seasonMetric==='npi' ? y0-i*(y0-y1)/4 : y1+i*(y0-y1)/4;
+    ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();
+    ctx.fillStyle='#7b8490';ctx.font='11px sans-serif';
+    const label=seasonMetric==='npi'?v.toFixed(0):'#'+Math.round(v);
+    ctx.fillText(label,10,y+4);
+  }
+
+  const palette=['#a31f34','#1f6aa5','#17805b','#ad6b08','#6845a8'];
+  const dateIndex=new Map(seasonDates.map((d,i)=>[d,i]));
+  const xForDate=d=>x0+(seasonDates.length===1?0:dateIndex.get(d)/(seasonDates.length-1))*(x1-x0);
+  const yForValue=v=> seasonMetric==='npi'
+    ? y0-(v-ymin)/(ymax-ymin)*(y0-y1)
+    : y1+(v-ymin)/(ymax-ymin)*(y0-y1);
+
+  series.forEach((s,si)=>{
+    ctx.beginPath(); let started=false;
+    s.forEach(p=>{
+      const v=seasonMetric==='npi'?p.npi:p.rank;
+      if(!Number.isFinite(v)||!dateIndex.has(p.date))return;
+      const x=xForDate(p.date),y=yForValue(v);
+      if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle=palette[si];ctx.lineWidth=2.4;ctx.stroke();
+  });
+
+  // Selected-date marker.
+  const selectedDate=seasonDates[selectedDateIndex];
+  const markerX=xForDate(selectedDate);
+  ctx.save();ctx.setLineDash([5,5]);ctx.strokeStyle='#8f98a3';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(markerX,y1);ctx.lineTo(markerX,y0);ctx.stroke();ctx.restore();
+
+  selectedTeams.forEach((team,si)=>{
+    const row=rowLookup.get(selectedDate+'\u0000'+team); if(!row)return;
+    const v=seasonMetric==='npi'?row.npi:row.rank;
+    const y=yForValue(v);
+    ctx.beginPath();ctx.arc(markerX,y,5.5,0,Math.PI*2);ctx.fillStyle=palette[si];ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+  });
+
+  const ticks=Math.min(6,seasonDates.length);ctx.textAlign='center';
+  for(let i=0;i<ticks;i++){
+    const di=ticks===1?0:Math.round(i*(seasonDates.length-1)/(ticks-1));
+    const x=x0+(seasonDates.length===1?0:di/(seasonDates.length-1))*(x1-x0);
+    ctx.fillStyle='#7b8490';ctx.font='11px sans-serif';ctx.fillText(shortDate(seasonDates[di]),x,h-20);
+  }
+  ctx.fillStyle='#4d5660';ctx.font='11px sans-serif';ctx.fillText(shortDate(selectedDate),markerX,y1-10);
+  ctx.textAlign='start';
+
+  let lx=x0;
+  selectedTeams.forEach((t,i)=>{
+    ctx.fillStyle=palette[i];ctx.fillRect(lx,8,12,4);ctx.fillStyle='#4d5660';ctx.font='11px sans-serif';ctx.fillText(t,lx+18,15);lx+=18+ctx.measureText(t).width+22;
+  });
+}
+function shortDate(s){if(!s)return'—';const d=new Date(s+'T00:00:00Z');return d.toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'});}
+function longDate(s){if(!s)return'—';const d=new Date(s+'T00:00:00Z');return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});}
 
 autoLoadTrajectoryData();
 </script>
