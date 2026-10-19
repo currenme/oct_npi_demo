@@ -192,6 +192,7 @@
 </header>
 
 <main>
+  <datalist id="builderTeamList"></datalist>
   <section id="builder" class="section active">
     <div class="hero">
       <div>
@@ -228,6 +229,7 @@
             <button class="btn" id="presetWeak">Weak schedule</button>
             <button class="btn" id="presetUpset">Upset résumé</button>
           </div>
+          <div class="chart-note" id="builderTeamSearchNote"><strong>Opponent search:</strong> add a row, then start typing a 2025 DIII team name and choose it from the suggestions. Selecting a team automatically loads its Nov. 15, 2025 NPI as a starting value; you can still override the NPI manually.</div>
         </div>
       </div>
 
@@ -370,10 +372,14 @@ $$('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
 const baseOpponents = [
   ['East Tex. Baptist',70.686,'L'], ['Wis.-Oshkosh',69.804,'L'], ['Ill. Wesleyan',67.434,'W'],
   ['Colby',66.544,'L'], ['Wis.-Eau Claire',66.386,'W'], ['MIT',65.530,'W'],
-  ['Johns Hopkins',65.416,'L'], ['Tufts',65.134,'W'], ['Wesleyan (CT)',64.023,'W'], ['Juniata',63.546,'L']
+  ['Johns Hopkins',65.416,'L'], ['Tufts',65.134,'W'], ['Wesleyan (CT)',64.023,'W'], ['Juniata',63.546,'L'],
+  ['Covenant',51.3,'W']
 ];
 let opponents = [];
 let nextId = 1;
+let builderNpiByTeam = new Map();
+let builderTeamByNormalizedName = new Map();
+const BUILDER_REFERENCE_DATE = '2025-11-15';
 
 function resetSchedule(arr=baseOpponents) {
   opponents = arr.map(x => ({id:nextId++, name:x[0], npi:x[1], result:x[2]}));
@@ -426,7 +432,7 @@ function renderOpponents() {
     const row=document.createElement('div');
     row.className='opp-row '+(result.retained.has(o.id)?'retained':'excluded');
     row.innerHTML=`
-      <input class="op-name" value="${escapeHtml(o.name)}" data-id="${o.id}" data-field="name">
+      <input class="op-name" value="${escapeHtml(o.name)}" placeholder="Search 2025 team…" list="builderTeamList" autocomplete="off" data-id="${o.id}" data-field="name">
       <div class="npi-control"><input type="range" min="20" max="80" step="0.1" value="${o.npi}" data-id="${o.id}" data-field="npi"><input class="npi-num" type="number" min="0" max="100" step="0.1" value="${o.npi.toFixed(1)}" data-id="${o.id}" data-field="npiNum"></div>
       <div class="seg"><button class="win ${o.result==='W'?'active':''}" data-id="${o.id}" data-result="W">W</button><button class="loss ${o.result==='L'?'active':''}" data-id="${o.id}" data-result="L">L</button></div>
       <div class="game-value">${gameValue(o).toFixed(3)}</div>
@@ -437,11 +443,58 @@ function renderOpponents() {
   bindRows(); updateSummary(result);
 }
 function bindRows(){
-  $$('[data-field="name"]').forEach(el=>el.oninput=e=>{ findOpp(+e.target.dataset.id).name=e.target.value; });
+  $$('[data-field="name"]').forEach(el=>{
+    el.oninput=e=>{ findOpp(+e.target.dataset.id).name=e.target.value; };
+    el.onchange=e=>applyBuilderTeamSelection(+e.target.dataset.id,e.target.value);
+  });
   $$('[data-field="npi"]').forEach(el=>el.oninput=e=>{ const o=findOpp(+e.target.dataset.id);o.npi=+e.target.value;renderOpponents(); });
   $$('[data-field="npiNum"]').forEach(el=>el.onchange=e=>{ const o=findOpp(+e.target.dataset.id);o.npi=Math.max(0,Math.min(100,+e.target.value));renderOpponents(); });
   $$('[data-result]').forEach(el=>el.onclick=e=>{ findOpp(+e.target.dataset.id).result=e.target.dataset.result;renderOpponents(); });
   $$('[data-remove]').forEach(el=>el.onclick=e=>{ opponents=opponents.filter(o=>o.id!==+e.currentTarget.dataset.remove);renderOpponents(); });
+}
+function applyBuilderTeamSelection(id, typedName){
+  const o=findOpp(id);
+  if(!o)return;
+  o.name=typedName;
+  const canonical=builderTeamByNormalizedName.get(normalizeName(typedName));
+  if(!canonical)return;
+  const refNpi=builderNpiByTeam.get(canonical);
+  o.name=canonical;
+  if(Number.isFinite(refNpi))o.npi=refNpi;
+  renderOpponents();
+}
+function updateBuilderTeamSearchFromSeasonData(){
+  if(!trajectoryData?.length)return;
+  const preferred=rowsByDate.get(BUILDER_REFERENCE_DATE);
+  let refRows=preferred;
+  let refDate=BUILDER_REFERENCE_DATE;
+  if(!refRows){
+    const prior=seasonDates.filter(d=>d<=BUILDER_REFERENCE_DATE).pop() || seasonDates[seasonDates.length-1];
+    refDate=prior; refRows=rowsByDate.get(prior)||[];
+  }
+  builderNpiByTeam=new Map(refRows.map(r=>[r.team,r.npi]));
+  builderTeamByNormalizedName=new Map();
+  teams.forEach(t=>builderTeamByNormalizedName.set(normalizeName(t),t));
+  $('#builderTeamList').innerHTML=teams.map(t=>`<option value="${escapeHtml(t)}"></option>`).join('');
+  // Sync the named default résumé opponents to the bundled dataset's reference-date NPIs.
+  // This keeps the demo defaults consistent with the frozen 2025 file while still allowing manual overrides afterward.
+  let synced=false;
+  for(const o of opponents){
+    const canonical=builderTeamByNormalizedName.get(normalizeName(o.name));
+    if(!canonical) continue;
+    const refNpi=builderNpiByTeam.get(canonical);
+    if(Number.isFinite(refNpi)){
+      o.name=canonical;
+      o.npi=refNpi;
+      synced=true;
+    }
+  }
+  if(synced) renderOpponents();
+  const note=$('#builderTeamSearchNote');
+  if(note){
+    const label=refDate===BUILDER_REFERENCE_DATE?'Nov. 15, 2025':longDate(refDate);
+    note.innerHTML=`<strong>Opponent search:</strong> add a row, start typing a 2025 DIII team name, and choose it from the suggestions. Selecting a team automatically loads its ${label} NPI as a starting value; you can still override the NPI manually. <strong>Demo tip:</strong> the default résumé has 11 games. Change East Tex. Baptist, Wis.-Oshkosh, Colby, Johns Hopkins, and Juniata from losses to wins; with all 11 now wins, <strong>Covenant</strong> becomes the excluded weak win once the 10-win minimum is satisfied.`;
+  }
 }
 function findOpp(id){ return opponents.find(o=>o.id===id); }
 function updateSummary(r){
@@ -463,7 +516,13 @@ function updateSummary(r){
     : `<strong>${excluded} game${excluded===1?' is':'s are'} currently excluded.</strong> Wins below the team’s NPI can be dropped only after satisfying the minimum-win requirement; losses above the team’s NPI do not count because they would raise the rating.`;
 }
 ['winWeight','qwbThreshold','qwbMultiplier','minWins'].forEach(id=>$('#'+id).addEventListener('input',renderOpponents));
-$('#addOpponent').onclick=()=>{opponents.push({id:nextId++,name:'New opponent',npi:50,result:'W'});renderOpponents();};
+$('#addOpponent').onclick=()=>{
+  const id=nextId++;
+  opponents.push({id,name:'',npi:50,result:'W'});
+  renderOpponents();
+  const input=document.querySelector(`[data-field="name"][data-id="${id}"]`);
+  if(input){input.focus(); input.click();}
+};
 $('#resetSchedule').onclick=()=>{ $('#winWeight').value=20;$('#qwbThreshold').value=55.5;$('#qwbMultiplier').value=.6;$('#minWins').value=10;resetSchedule(); };
 $('#presetStrong').onclick=()=>resetSchedule(baseOpponents.map((x,i)=>[x[0], Math.min(78,x[1]+6), i%3===0?'W':x[2]]));
 $('#presetWeak').onclick=()=>resetSchedule(baseOpponents.map((x,i)=>[x[0], Math.max(30,x[1]-17), i<7?'W':'L']));
@@ -702,6 +761,7 @@ function loadTabularRows(rows,sourceName='file'){
 
   teams=[...new Set(trajectoryData.map(x=>x.team))].sort();
   $('#teamList').innerHTML=teams.map(t=>`<option value="${escapeHtml(t)}"></option>`).join('');
+  updateBuilderTeamSearchFromSeasonData();
   $('#trajectoryUI').classList.add('ready');
 
   const defaults=['MIT','Tufts','Wis.-Oshkosh'];
